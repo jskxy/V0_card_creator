@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+html {
+  font-family: 'Plus Jakarta Sans', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -116,14 +122,15 @@ body {
 
 /* 自定义样式 */
 .apple-gradient-text {
-  background: linear-gradient(to right, #f97316, #ec4899, #8b5cf6);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .cute-font {
-  font-family: "Comic Sans MS", "Chalkboard SE", "Marker Felt", "Noto Sans SC", sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.025em;
 }
 
 body, button, input, textarea, select {
@@ -131,60 +138,177 @@ body, button, input, textarea, select {
 }
 
 .header-link {
-  transition: color 0.3s ease, transform 0.3s ease;
+  position: relative;
+  transition: all 0.2s ease-in-out;
 }
 
 .header-link:hover {
-  color: #1978e5;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+}
+
+.header-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 50%;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  transition: all 0.3s ease-in-out;
+  transform: translateX(-50%);
+}
+
+.header-link:hover::after {
+  width: 100%;
 }
 
 .generate-button {
-  transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.generate-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(25, 120, 229, 0.3);
+.generate-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.generate-button:hover::before {
+  left: 100%;
 }
 
 .example-card-image {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease-in-out;
 }
 
 .example-card-image:hover {
   transform: scale(1.05);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-}
-
-.generated-card-container {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 20px 40px -10px rgba(0,0,0,0.1);
-  border-radius: 1.5rem;
-  overflow: hidden;
-  transition: box-shadow 0.3s ease-in-out;
-}
-
-.generated-card-container:hover {
-  box-shadow: 0 15px 30px -8px rgba(0, 0, 0, 0.08), 0 25px 50px -12px rgba(0,0,0,0.15);
-}
-
-.image-action-button {
-  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.image-action-button:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .image-overlay-buttons {
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease-in-out;
 }
 
-.group:hover .image-overlay-buttons {
+.example-card-image:hover + .image-overlay-buttons,
+.image-overlay-buttons:hover {
   opacity: 1;
+}
+
+.image-action-button {
+  transition: all 0.2s ease-in-out;
+  backdrop-filter: blur(8px);
+}
+
+.image-action-button:hover {
+  transform: scale(1.1);
+}
+
+/* 简化的烟雾光标效果 - 只使用蓝色系 */
+.smoke-cloud {
+  pointer-events: none;
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle, 
+    rgba(59, 130, 246, 0.4) 0%, 
+    rgba(99, 102, 241, 0.2) 50%, 
+    transparent 100%);
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  opacity: 0;
+  animation: smokeCloudDissipate 3s ease-out forwards;
+  filter: blur(1px);
+}
+
+@keyframes smokeCloudDissipate {
+  0% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+    filter: blur(0px);
+  }
+  25% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(0.8) rotate(45deg);
+    filter: blur(1px);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1.2) rotate(90deg);
+    filter: blur(2px);
+  }
+  75% {
+    opacity: 0.15;
+    transform: translate(-50%, -50%) scale(1.8) rotate(135deg) translateY(-20px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.5) rotate(180deg) translateY(-60px);
+    filter: blur(8px);
+  }
+}
+
+/* 小烟雾粒子辅助效果 */
+.smoke-particle {
+  pointer-events: none;
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  z-index: 9998;
+  opacity: 0;
+  animation: smokeParticleFloat 2.5s ease-out forwards;
+}
+
+@keyframes smokeParticleFloat {
+  0% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1) translateY(-15px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5) translateY(-40px);
+  }
+}
+
+/* 鼠标悬停时的粒子效果 */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  width: 4px;
+  height: 4px;
+  background: linear-gradient(45deg, #3b82f6, #6366f1, #8b5cf6);
+  border-radius: 50%;
+  z-index: 9998;
+  animation: particle 1.5s ease-out forwards;
+}
+
+@keyframes particle {
+  0% {
+    opacity: 1;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(360deg) translateY(-20px);
+  }
 }
 
 /* Sidebar样式 */

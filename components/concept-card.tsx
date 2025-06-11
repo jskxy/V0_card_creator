@@ -80,7 +80,7 @@ export function ConceptCard({ data }: ConceptCardProps) {
             </div>
           )}
 
-          {/* 生活应用 */}
+          {/* 学以致用 */}
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div

@@ -49,7 +49,7 @@ export default function LibraryPage() {
 
       for (const card of cards) {
         // 这里简化处理，实际应该渲染每个卡片然后转换
-        const cardText = `${card.title}\n\n${card.explanation}\n\n背景：${card.background}\n\n相关概念：${card.related.join(", ")}\n\n生活应用：${card.life_use}`
+        const cardText = `${card.title}\n\n${card.explanation}\n\n背景：${card.background}\n\n相关概念：${card.related.join(", ")}\n\n学以致用：${card.life_use}`
         zip.file(`${card.title}.txt`, cardText)
       }
 

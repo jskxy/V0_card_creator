@@ -3,19 +3,16 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, Sparkles, Download, Share2, Menu } from "lucide-react"
+import { Loader2, Sparkles, Download, Share2, Menu, User, Star, Shield, Cpu, Box, Lightbulb } from "lucide-react"
 import HistorySidebar from "@/components/HistorySidebar"
 import { CONCEPT_ELEMENTS } from "@/lib/prompt-lib"
 
 interface CardData {
   id: string
   concept: string
-  title: string
-  explanation: string
-  background: string
-  related: string[]
-  life_use: string
-  createdAt: string
+  html: string
+  selectedElements: string[]
+  timestamp: string
 }
 
 // 示例图片数据
@@ -30,12 +27,37 @@ const exampleImages = [
   "https://images.unsplash.com/photo-1519681393784-d120266ceb60?w=400&h=400&fit=crop"
 ]
 
+// 产品特点
+const PRODUCT_FEATURES = [
+  {
+    icon: Shield,
+    label: "无需登录",
+    bgColor: "bg-emerald-500/10",
+    textColor: "text-emerald-600",
+    borderColor: "border-emerald-200"
+  },
+  {
+    icon: Star,
+    label: "100% 免费",
+    bgColor: "bg-amber-500/10",
+    textColor: "text-amber-600",
+    borderColor: "border-amber-200"
+  },
+  {
+    icon: Cpu,
+    label: "AI 驱动",
+    bgColor: "bg-violet-500/10",
+    textColor: "text-violet-600",
+    borderColor: "border-violet-200"
+  }
+]
+
 export default function HomePage() {
   const [concept, setConcept] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [recentCards, setRecentCards] = useState<CardData[]>([])
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [selectedElements, setSelectedElements] = useState<string[]>(['definition', 'plain_explanation', 'application'])
+  const [selectedElements, setSelectedElements] = useState<string[]>([])
 
   useEffect(() => {
     // 加载最近的3张卡片
@@ -43,6 +65,19 @@ export default function HomePage() {
     if (stored) {
       const cards = JSON.parse(stored) as CardData[]
       setRecentCards(cards.slice(0, 3))
+    }
+
+    // 检查是否有重新生成的数据
+    const regenerateConcept = sessionStorage.getItem('regenerate-concept')
+    const regenerateElements = sessionStorage.getItem('regenerate-elements')
+    
+    if (regenerateConcept && regenerateElements) {
+      setConcept(regenerateConcept)
+      setSelectedElements(JSON.parse(regenerateElements))
+      
+      // 清除sessionStorage
+      sessionStorage.removeItem('regenerate-concept')
+      sessionStorage.removeItem('regenerate-elements')
     }
   }, [])
 
@@ -72,16 +107,21 @@ export default function HomePage() {
         }),
       })
 
-      if (!response.ok) throw new Error("生成失败")
-
       const data = await response.json()
+      
+      if (!response.ok) {
+        // 显示服务器返回的具体错误信息
+        const errorMessage = data.error || `HTTP ${response.status}: ${response.statusText}`
+        throw new Error(errorMessage)
+      }
 
       // 创建新卡片数据
       const newCard: CardData = {
         id: Date.now().toString(),
-        concept: concept.trim(),
-        ...data,
-        createdAt: new Date().toISOString(),
+        concept: data.concept,
+        html: data.html,
+        selectedElements: data.selectedElements,
+        timestamp: data.timestamp,
       }
 
       // 保存到localStorage
@@ -94,7 +134,8 @@ export default function HomePage() {
       window.location.href = `/preview/${newCard.id}`
     } catch (error) {
       console.error("生成失败:", error)
-      alert("生成失败，请重试")
+      // 显示更详细的错误信息
+      alert(`生成失败: ${error instanceof Error ? error.message : '未知错误'}，请重试`)
     } finally {
       setIsGenerating(false)
     }
@@ -145,7 +186,7 @@ export default function HomePage() {
 
         <div className="layout-container flex h-full grow flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-30 flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 bg-white/80 px-6 sm:px-10 py-4 backdrop-blur-md">
+          <header className="sticky top-0 z-30 flex items-center justify-between whitespace-nowrap bg-white/80 px-6 sm:px-10 py-4 backdrop-blur-md">
             <div className="flex items-center gap-3 text-slate-900">
               <button
                 onClick={() => setIsSidebarOpen(true)}
@@ -155,10 +196,13 @@ export default function HomePage() {
                 <Menu className="w-full h-full" />
               </button>
               
-              <div className="w-7 h-7 text-blue-600">
-                <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                  <path d="M44 11.2727C44 14.0109 39.8386 16.3957 33.69 17.6364C39.8386 18.877 44 21.2618 44 24C44 26.7382 39.8386 29.123 33.69 30.3636C39.8386 31.6043 44 33.9891 44 36.7273C44 40.7439 35.0457 44 24 44C12.9543 44 4 40.7439 4 36.7273C4 33.9891 8.16144 31.6043 14.31 30.3636C8.16144 29.123 4 26.7382 4 24C4 21.2618 8.16144 18.877 14.31 17.6364C8.16144 16.3957 4 14.0109 4 11.2727C4 7.25611 12.9543 4 24 4C35.0457 4 44 7.25611 44 11.2727Z" fill="currentColor"></path>
-                </svg>
+              {/* 概念魔方Logo */}
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg relative">
+                <div className="w-5 h-5 text-white relative">
+                  <Box className="w-full h-full" />
+                  <div className="absolute inset-0 w-full h-full border border-white/30 rounded-sm transform rotate-12"></div>
+                  <div className="absolute inset-0 w-full h-full border border-white/20 rounded-sm transform -rotate-12"></div>
+                </div>
               </div>
               
               <h1 className="text-slate-900 text-xl font-bold leading-tight tracking-tight cute-font">概念魔方</h1>
@@ -171,7 +215,11 @@ export default function HomePage() {
                 <a className="text-slate-700 hover:text-blue-600 text-sm font-medium leading-normal header-link" href="#">创作</a>
               </nav>
               
-              <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10 border-2 border-white shadow-sm bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+              {/* 登录按钮 */}
+              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-medium rounded-lg transition-all hover:shadow-lg">
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">登录</span>
+              </button>
             </div>
           </header>
 
@@ -180,71 +228,83 @@ export default function HomePage() {
             <div className="layout-content-container flex flex-col max-w-4xl w-full flex-1">
               
               {/* Hero Section */}
-              <div className="text-center mb-10">
-                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight apple-gradient-text cute-font leading-tight">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight apple-gradient-text cute-font leading-tight mb-4">
                   转动思维的魔方，看见概念的形状
                 </h2>
-                <p className="text-slate-600 text-base sm:text-lg font-normal leading-relaxed mt-3 max-w-2xl mx-auto">
+                <p className="text-slate-600 text-base sm:text-lg font-normal leading-relaxed mb-6">
                   给我一个概念，还你一幅视觉叙事
                 </p>
+                
+                {/* 产品特点 */}
+                <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+                  {PRODUCT_FEATURES.map((feature, index) => (
+                    <div 
+                      key={index}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${feature.bgColor} ${feature.textColor} ${feature.borderColor} text-sm font-medium`}
+                    >
+                      <feature.icon className="w-4 h-4" />
+                      {feature.label}
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Input Section */}
-              <div className="bg-white/70 backdrop-blur-lg p-6 sm:p-8 rounded-2xl shadow-xl mb-12">
+              {/* AI Generator Section */}
+              <div className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl mb-12 p-6 sm:p-8">
+                {/* 输入框 */}
                 <div className="relative mb-6">
                   <textarea
                     value={concept}
                     onChange={(e) => setConcept(e.target.value)}
-                    className="form-input w-full min-w-0 resize-y overflow-hidden rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 border border-slate-300 hover:border-slate-400 focus:border-blue-600 bg-slate-50/80 focus:bg-white min-h-40 placeholder:text-slate-400 p-4 text-base font-normal leading-relaxed transition-all duration-200 shadow-sm focus:shadow-md"
-                    placeholder="例如：量子纠缠、光合作用、傅里叶变换"
-                    rows={5}
+                    className="w-full min-h-[120px] px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all"
+                    placeholder="请描述您想要生成卡片的概念，例如：量子纠缠、光合作用、傅里叶变换..."
                     maxLength={60}
                     disabled={isGenerating}
                   />
-                  <div className="absolute right-3 bottom-3 text-sm text-slate-400">
+                  <div className="absolute right-3 bottom-3 text-xs text-slate-400">
                     {concept.length}/60
                   </div>
                 </div>
 
                 {/* 概念要素选择 */}
                 <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-slate-700">选择要包含的概念要素</h3>
-                    <div className="text-xs text-slate-500">({selectedElements.length}/7)</div>
+                  {/* 提示文字 */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-full flex items-center justify-center">
+                        <Lightbulb className="w-3 h-3 text-amber-600" />
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">选择要包含的概念要素</span>
+                    </div>
+                    <div className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                      {selectedElements.length}/7
+                    </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {/* 优化颜色的要素标签 */}
+                  <div className="flex flex-wrap gap-2">
                     {CONCEPT_ELEMENTS.map((element) => (
                       <button
                         key={element.key}
                         onClick={() => handleElementToggle(element.key)}
                         className={`
-                          relative group px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all duration-200
+                          group relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
                           ${selectedElements.includes(element.key) 
-                            ? element.color + ' ring-2 ring-offset-1 ring-slate-300' 
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            ? 'bg-gradient-to-r from-sky-50 to-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm' 
+                            : 'text-slate-600 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50 hover:text-slate-700 hover:border border border-transparent hover:border-slate-200 hover:shadow-sm'
                           }
                         `}
                       >
-                        <div className="flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full transition-colors ${
-                            selectedElements.includes(element.key) ? 'bg-current' : 'bg-slate-300'
-                          }`}></div>
-                          {element.label}
-                        </div>
+                        {element.label}
                         
                         {/* 悬停提示 */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 shadow-xl">
                           {element.description}
                           <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
                         </div>
                       </button>
                     ))}
-                  </div>
-                  
-                  <div className="mt-3 text-xs text-slate-500">
-                    💡 点击上方按钮来定制您的概念卡片内容
                   </div>
                 </div>
                 
@@ -252,17 +312,17 @@ export default function HomePage() {
                   <button
                     onClick={handleGenerate}
                     disabled={!concept.trim() || concept.length > 60 || isGenerating || selectedElements.length === 0}
-                    className="flex min-w-[160px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-base font-semibold leading-normal tracking-wide shadow-lg hover:shadow-xl generate-button cute-font disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex min-w-[180px] items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed cute-font"
                   >
                     {isGenerating ? (
                       <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        AI 正在生成...
+                        AI 正在生成卡片...
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-5 h-5 mr-2" />
-                        <span className="truncate">生成图片</span>
+                        生成概念卡片
                       </>
                     )}
                   </button>
