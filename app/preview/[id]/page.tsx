@@ -10,9 +10,11 @@ interface CardData {
   id: string
   concept: string
   html: string
-  selectedElements: string[]
   timestamp: string
 }
+
+// 添加动态路由配置
+export const dynamic = 'force-dynamic'
 
 export default function PreviewPage() {
   const params = useParams()
@@ -46,11 +48,35 @@ export default function PreviewPage() {
     if (!cardRef.current) return
 
     try {
+      // 为了避免跨域问题，我们需要等待一下让样式完全加载
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
       const dataUrl = await htmlToImage.toPng(cardRef.current, {
         quality: 1,
-        width: 1080,
-        height: 800,
-        pixelRatio: 2
+        width: 750,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        cacheBust: true,
+        skipFonts: true,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        },
+        filter: (node) => {
+          // 过滤掉可能引起问题的元素
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as HTMLElement;
+            // 跳过外部CSS链接
+            if (element.tagName === 'LINK' && element.getAttribute('rel') === 'stylesheet') {
+              return false;
+            }
+            // 跳过外部字体
+            if (element.tagName === 'STYLE' && element.textContent?.includes('@import')) {
+              return false;
+            }
+          }
+          return true;
+        }
       })
       
       const link = document.createElement('a')
@@ -58,8 +84,71 @@ export default function PreviewPage() {
       link.href = dataUrl
       link.click()
     } catch (error) {
-      console.error('下载失败:', error)
-      alert('下载失败，请重试')
+      console.warn('PNG下载失败，尝试JPEG格式:', error)
+      
+      try {
+        // 备用方案：使用JPEG格式，配置更宽松
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        const dataUrl = await htmlToImage.toJpeg(cardRef.current, {
+          quality: 0.95,
+          width: 750,
+          pixelRatio: 1,
+          backgroundColor: '#ffffff',
+          cacheBust: true,
+          skipFonts: true,
+          filter: (node) => {
+            // 更宽松的过滤策略
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as HTMLElement;
+              if (element.tagName === 'SCRIPT') return false;
+              if (element.tagName === 'LINK' && element.getAttribute('rel') === 'stylesheet') {
+                return false;
+              }
+            }
+            return true;
+          }
+        })
+        
+        const link = document.createElement('a')
+        link.download = `概念卡片-${cardData?.concept || 'card'}.jpg`
+        link.href = dataUrl
+        link.click()
+      } catch (secondError) {
+        console.warn('JPEG下载也失败，尝试SVG格式:', secondError)
+        
+        // 最后的备用方案：使用SVG（最稳定但可能样式不完整）
+        try {
+          const dataUrl = await htmlToImage.toSvg(cardRef.current, {
+            width: 750,
+            backgroundColor: '#ffffff',
+            skipFonts: true,
+            filter: (node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as HTMLElement;
+                if (element.tagName === 'SCRIPT') return false;
+                if (element.tagName === 'LINK') return false;
+                if (element.tagName === 'STYLE') return false;
+              }
+              return true;
+            }
+          })
+          
+          const link = document.createElement('a')
+          link.download = `概念卡片-${cardData?.concept || 'card'}.svg`
+          link.href = dataUrl
+          link.click()
+        } catch (thirdError) {
+          console.error('所有下载方案都失败:', thirdError)
+          // 提供更友好的错误提示
+          const errorMsg = `下载失败，可能的解决方案：
+• 刷新页面后重试
+• 在卡片上右键选择"另存为图片"
+• 尝试使用截图工具
+• 检查浏览器是否阻止了下载`
+          alert(errorMsg)
+        }
+      }
     }
   }
 
@@ -88,7 +177,6 @@ export default function PreviewPage() {
     // 保存当前概念和选择的要素到 sessionStorage
     if (cardData) {
       sessionStorage.setItem('regenerate-concept', cardData.concept)
-      sessionStorage.setItem('regenerate-elements', JSON.stringify(cardData.selectedElements))
     }
     router.push('/')
   }
@@ -177,7 +265,7 @@ export default function PreviewPage() {
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full">
               <div 
                 ref={cardRef}
-                className="w-full max-w-[1080px] mx-auto"
+                className="w-full max-w-[750px] mx-auto"
                 dangerouslySetInnerHTML={{ __html: cardData.html }}
               />
             </div>
@@ -198,19 +286,6 @@ export default function PreviewPage() {
                   <p className="text-sm text-slate-700">
                     {new Date(cardData.timestamp).toLocaleString('zh-CN')}
                   </p>
-                </div>
-                <div>
-                  <span className="text-sm text-slate-500">包含要素 ({cardData.selectedElements.length})</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {cardData.selectedElements.map((element) => (
-                      <span 
-                        key={element}
-                        className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md"
-                      >
-                        {element}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </div>
             </div>

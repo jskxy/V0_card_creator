@@ -6,12 +6,8 @@ import { X, Clock, Download, Share2 } from "lucide-react"
 interface CardData {
   id: string
   concept: string
-  title: string
-  explanation: string
-  background: string
-  related: string[]
-  life_use: string
-  createdAt: string
+  html: string
+  timestamp: string
 }
 
 interface HistorySidebarProps {
@@ -136,15 +132,9 @@ export default function HistorySidebar({ isOpen, onClose }: HistorySidebarProps)
                       </div>
                     </div>
                     
-                    {card.title && (
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-2">
-                        {card.title}
-                      </p>
-                    )}
-                    
                     <div className="flex items-center justify-between text-xs text-slate-400">
                       <span>
-                        {new Date(card.createdAt).toLocaleDateString('zh-CN', {
+                        {new Date(card.timestamp).toLocaleDateString('zh-CN', {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',

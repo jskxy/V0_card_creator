@@ -1,16 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { CARD_SNIPPETS, CARD_PROMPT_TEMPLATE } from "@/lib/cardPromptLib"
+import { CARD_PROMPT_TEMPLATE } from "@/lib/cardPromptLib"
 
 export async function POST(request: NextRequest) {
   try {
-    const { concept, selectedElements } = await request.json()
+    const { concept } = await request.json()
 
     if (!concept || concept.length > 60) {
       return NextResponse.json({ error: "概念不能为空且不超过60字" }, { status: 400 })
-    }
-
-    if (!selectedElements || selectedElements.length === 0) {
-      return NextResponse.json({ error: "请至少选择一个概念要素" }, { status: 400 })
     }
 
     // 获取API密钥 - 优先使用环境变量，否则使用备用密钥
@@ -21,16 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "服务配置错误：API密钥未找到" }, { status: 500 })
     }
 
-    // 构建模块描述
-    const modules = selectedElements
-      .map((key: string) => CARD_SNIPPETS[key as keyof typeof CARD_SNIPPETS])
-      .filter(Boolean)
-      .join("\n")
-
     // 生成最终提示词
-    const finalPrompt = CARD_PROMPT_TEMPLATE
-      .replace("{concept}", concept.trim())
-      .replace("{modules}", modules)
+    const finalPrompt = CARD_PROMPT_TEMPLATE.replace("{concept}", concept.trim())
 
     console.log("使用API密钥前缀:", apiKey.substring(0, 20) + "...") // 调试日志
     console.log("生成的提示词长度:", finalPrompt.length) // 调试日志
@@ -52,7 +40,7 @@ export async function POST(request: NextRequest) {
           },
         ],
         temperature: 0.7,
-        max_tokens: 2048,
+        max_tokens: 4096,
         stream: false,
       }),
     })
@@ -120,7 +108,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       html: cleanedHtml,
       concept: concept.trim(),
-      selectedElements: selectedElements,
       timestamp: new Date().toISOString()
     })
   } catch (error) {
